@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 通讯录管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container login-container">
+        <div class="card login-card">
+            <h2>📇 通讯录管理系统</h2>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('login')">登录</button>
+                <button class="tab-btn" onclick="showTab('register')">注册</button>
+            </div>
+
+            <div id="login-tab" class="tab-content active">
+                <input type="text" id="login-username" placeholder="请输入用户名" class="form-input">
+                <input type="password" id="login-password" placeholder="请输入密码" class="form-input">
+                <button class="btn login-btn" onclick="login()">登录</button>
+            </div>
+
+            <div id="register-tab" class="tab-content">
+                <input type="text" id="reg-username" placeholder="请输入用户名" class="form-input">
+                <input type="password" id="reg-password" placeholder="请输入密码" class="form-input">
+                <input type="email" id="reg-email" placeholder="请输入邮箱（可选）" class="form-input">
+                <button class="btn reg-btn" onclick="register()">注册</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+
+        // 关键：后端地址必须和后端启动的地址一致
+        const BASE_URL = 'http://127.0.0.1:5000/api';
+
+        function register() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+
+            if (!username) { alert('请输入用户名！'); return; }
+            if (!password) { alert('请输入密码！'); return; }
+            if (password.length < 6) { alert('密码长度不能少于6位！'); return; }
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('请输入有效的邮箱地址！'); return; }
+
+            const regBtn = document.querySelector('.reg-btn');
+            regBtn.disabled = true;
+            regBtn.textContent = '注册中...';
+
+            // 发送注册请求（调试用：打开浏览器控制台看请求详情）
+            axios.post(`${BASE_URL}/register`, { username, password, email })
+                .then(res => {
+                    alert('注册成功！请登录');
+                    showTab('login');
+                    document.getElementById('reg-username').value = '';
+                    document.getElementById('reg-password').value = '';
+                    document.getElementById('reg-email').value = '';
+                })
+                .catch(err => {
+                    // 打印错误详情到控制台（F12打开控制台查看）
+                    console.error('注册错误:', err);
+                    const errMsg = err.response?.data?.message ||
+                                  (err.message.includes('Network Error') ? '后端未启动或地址错误' : '注册失败');
+                    alert(`注册失败：${errMsg}`);
+                })
+                .finally(() => {
+                    regBtn.disabled = false;
+                    regBtn.textContent = '注册';
+                });
+        }
+
+        function login() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            if (!username) { alert('请输入用户名！'); return; }
+            if (!password) { alert('请输入密码！'); return; }
+
+            const loginBtn = document.querySelector('.login-btn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+
+            axios.post(`${BASE_URL}/login`, { username, password })
+                .then(res => {
+                    localStorage.setItem('user_id', res.data.data.user_id);
+                    localStorage.setItem('username', res.data.data.username);
+                    window.location.href = 'index.html';
+                })
+                .catch(err => {
+                    console.error('登录错误:', err);
+                    const errMsg = err.response?.data?.message || '用户名或密码错误';
+                    alert(`登录失败：${errMsg}`);
+                })
+                .finally(() => {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '登录';
+                });
+        }
+
+        window.onload = function() {
+            const userId = localStorage.getItem('user_id');
+            if (userId) window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
